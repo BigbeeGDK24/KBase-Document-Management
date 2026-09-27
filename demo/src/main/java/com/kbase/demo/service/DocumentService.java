@@ -45,7 +45,9 @@ public class DocumentService {
 
     }
 
-    // UPLOAD FILE
+    // ==========================
+    // UPLOAD DOCUMENT
+    // ==========================
     public Document upload(
             Long projectId,
             MultipartFile file,
@@ -118,16 +120,40 @@ public class DocumentService {
 
     }
 
-    // GET DOCUMENTS
-    public List<Document> getByProject(Long projectId) {
+    // ==========================
+    // GET DOCUMENT BY PROJECT
+    // ==========================
+    public List<Document> getByProject(
+            Long projectId
+    ) {
 
         return documentRepository
                 .findByProject_Id(projectId);
 
     }
 
-    // GET BY ID
-    public Document getById(Long id) {
+    // ==========================
+    // SEARCH DOCUMENT
+    // ==========================
+    public List<Document> searchDocument(
+            Long projectId,
+            String keyword
+    ) {
+
+        return documentRepository
+                .findByProject_IdAndFileNameContainingIgnoreCase(
+                        projectId,
+                        keyword
+                );
+
+    }
+
+    // ==========================
+    // GET DOCUMENT BY ID
+    // ==========================
+    public Document getById(
+            Long id
+    ) {
 
         return documentRepository
                 .findById(id)
@@ -135,8 +161,12 @@ public class DocumentService {
 
     }
 
-    // DELETE DATABASE + FILE
-    public void delete(Long id) throws IOException {
+    // ==========================
+    // DELETE DOCUMENT
+    // ==========================
+    public void delete(
+            Long id
+    ) throws IOException {
 
         Document document
                 = documentRepository.findById(id)
@@ -146,20 +176,17 @@ public class DocumentService {
                                 )
                         );
 
-        // lấy đường dẫn file
         Path path
                 = Paths.get(
                         document.getFilePath()
                 );
 
-        // xóa file thật
         if (Files.exists(path)) {
 
             Files.delete(path);
 
         }
 
-        // xóa database
         documentRepository.delete(document);
 
     }

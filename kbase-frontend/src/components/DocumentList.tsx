@@ -7,9 +7,10 @@ import { formatDate, formatFileSize } from "../utils/format";
 interface DocumentListProps {
   documents: DocumentRecord[];
   onDeleted: (documentId: number) => void;
+  emptyMessage?: string;
 }
 
-function DocumentList({ documents, onDeleted }: DocumentListProps) {
+function DocumentList({ documents, onDeleted, emptyMessage = "No documents have been uploaded yet." }: DocumentListProps) {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
@@ -41,7 +42,7 @@ function DocumentList({ documents, onDeleted }: DocumentListProps) {
     }
   };
 
-  if (documents.length === 0) return <p className="empty-copy">No documents have been uploaded yet.</p>;
+  if (documents.length === 0) return <p className="empty-copy">{emptyMessage}</p>;
 
   return <>
     {error && <p className="inline-error" role="alert">{error}</p>}

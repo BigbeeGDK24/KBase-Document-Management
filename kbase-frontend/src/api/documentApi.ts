@@ -6,6 +6,11 @@ export async function getDocuments(projectId: string): Promise<DocumentRecord[]>
   return data;
 }
 
+export async function searchDocuments(projectId: string, keyword: string): Promise<DocumentRecord[]> {
+  const { data } = await api.get<DocumentRecord[]>(`/projects/${projectId}/documents/search`, { params: { keyword } });
+  return data;
+}
+
 export async function uploadDocument(projectId: number, file: File): Promise<DocumentRecord> {
   const formData = new FormData();
   formData.append("file", file);

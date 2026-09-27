@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getDocuments } from "../api/documentApi";
+import { getDocuments, searchDocuments } from "../api/documentApi";
 import { getProject } from "../api/projectApi";
 import DocumentList from "../components/DocumentList";
 import FileUpload from "../components/FileUpload";
@@ -15,6 +15,10 @@ function ProjectDetail() {
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [searchResults, setSearchResults] = useState<DocumentRecord[] | null>(null);
+  const [keyword, setKeyword] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +30,7 @@ function ProjectDetail() {
       const [projectResponse, documentsResponse] = await Promise.all([getProject(id), getDocuments(id)]);
       setProject(projectResponse);
       setDocuments(documentsResponse);
+      setSearchResults(null);
     } catch (requestError) {
       setError(getApiError(requestError, "Unable to load this project."));
     } finally {
@@ -43,14 +48,39 @@ function ProjectDetail() {
   const canInvite = project.owner?.username === user?.username;
   const onMemberInvited = (member: ProjectMember) => setProject((current) => current ? { ...current, members: [...(current.members || []), member] } : current);
   const onUploaded = (document: DocumentRecord) => setDocuments((current) => [document, ...current]);
-  const onDeleted = (documentId: number) => setDocuments((current) => current.filter((document) => document.id !== documentId));
+  const onDeleted = (documentId: number) => {
+    setDocuments((current) => current.filter((document) => document.id !== documentId));
+    setSearchResults((current) => current?.filter((document) => document.id !== documentId) ?? null);
+  };
+  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!id) return;
+
+    const trimmedKeyword = keyword.trim();
+    if (!trimmedKeyword) {
+      setSearchError(null);
+      setSearchResults(null);
+      return;
+    }
+
+    setSearchError(null);
+    setIsSearching(true);
+    try {
+      setSearchResults(await searchDocuments(id, trimmedKeyword));
+    } catch (requestError) {
+      setSearchError(getApiError(requestError, "Unable to search documents."));
+    } finally {
+      setIsSearching(false);
+    }
+  };
+  const displayedDocuments = searchResults ?? documents;
 
   return <>
     <Link className="back-link" to="/dashboard">← All projects</Link>
     <section className="project-hero"><div><p className="eyebrow">Project workspace</p><h2>{project.name}</h2><p>{project.description || "No description has been added to this project."}</p></div><dl><div><dt>Owner</dt><dd>{project.owner?.username || "Not available"}</dd></div><div><dt>Created</dt><dd>{formatDate(project.createdAt)}</dd></div></dl></section>
     <div className="detail-grid">
       <section className="content-panel members-panel"><MemberList projectId={project.id} members={members} canInvite={canInvite} onMemberInvited={onMemberInvited} /></section>
-      <section className="content-panel documents-panel"><div className="section-heading"><div><h2>Documents</h2><p>Upload, download, and maintain your project files.</p></div></div><FileUpload projectId={project.id} onUploaded={onUploaded} /><DocumentList documents={documents} onDeleted={onDeleted} /></section>
+      <section className="content-panel documents-panel"><div className="section-heading"><div><h2>Documents</h2><p>Upload, download, and maintain your project files.</p></div></div><FileUpload projectId={project.id} onUploaded={onUploaded} /><form className="document-search" onSubmit={handleSearch}><label className="sr-only" htmlFor="document-search">Search documents</label><input id="document-search" type="search" value={keyword} onChange={(event) => { setKeyword(event.target.value); if (!event.target.value.trim()) { setSearchError(null); setSearchResults(null); } }} placeholder="Search documents" /><button className="button button-secondary" type="submit" disabled={isSearching}>{isSearching ? "Searching…" : "Search"}</button></form>{searchError && <p className="inline-error" role="alert">{searchError}</p>}<DocumentList documents={displayedDocuments} onDeleted={onDeleted} emptyMessage={searchResults ? "No documents match your search." : undefined} /></section>
     </div>
   </>;
 }

@@ -1,8 +1,11 @@
 package com.kbase.demo.controller;
 
 import com.kbase.demo.entity.Document;
-
 import com.kbase.demo.service.DocumentService;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -38,11 +41,26 @@ public class DocumentController {
 
     }
 
+    // ==========================
     // UPLOAD DOCUMENT
-    @PostMapping("/{projectId}/documents/upload")
+    // ==========================
+    @PostMapping(
+            value = "/{projectId}/documents/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public Document upload(
             @PathVariable Long projectId,
-            @RequestParam("file") MultipartFile file,
+            @RequestParam("file")
+            @Parameter(
+                    description = "Upload document file",
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(
+                                    type = "string",
+                                    format = "binary"
+                            )
+                    )
+            ) MultipartFile file,
             Authentication authentication
     ) throws IOException {
 
@@ -54,7 +72,9 @@ public class DocumentController {
 
     }
 
-    // GET DOCUMENT LIST
+    // ==========================
+    // GET DOCUMENT LIST BY PROJECT
+    // ==========================
     @GetMapping("/{projectId}/documents")
     public List<Document> getDocuments(
             @PathVariable Long projectId
@@ -64,14 +84,31 @@ public class DocumentController {
 
     }
 
+    // ==========================
+    // SEARCH DOCUMENT
+    // ==========================
+    @GetMapping("/{projectId}/documents/search")
+    public List<Document> searchDocuments(
+            @PathVariable Long projectId,
+            @RequestParam String keyword
+    ) {
+
+        return service.searchDocument(
+                projectId,
+                keyword
+        );
+
+    }
+
+    // ==========================
     // DOWNLOAD DOCUMENT
+    // ==========================
     @GetMapping("/documents/{id}/download")
     public ResponseEntity<Resource> download(
             @PathVariable Long id
     ) throws IOException {
 
-        Document document
-                = service.getById(id);
+        Document document = service.getById(id);
 
         if (document == null) {
 
@@ -81,15 +118,13 @@ public class DocumentController {
 
         }
 
-        Path path
-                = Paths.get(
-                        document.getFilePath()
-                );
+        Path path = Paths.get(
+                document.getFilePath()
+        );
 
-        Resource resource
-                = new UrlResource(
-                        path.toUri()
-                );
+        Resource resource = new UrlResource(
+                path.toUri()
+        );
 
         if (!resource.exists()) {
 
@@ -115,7 +150,9 @@ public class DocumentController {
 
     }
 
+    // ==========================
     // DELETE DOCUMENT
+    // ==========================
     @DeleteMapping("/documents/{id}")
     public String delete(
             @PathVariable Long id

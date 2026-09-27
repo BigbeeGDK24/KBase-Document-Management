@@ -1,0 +1,41 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: kbase-postgres
+    environment:
+      POSTGRES_DB: kbase_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  backend:
+    build:
+      context: ./demo
+      dockerfile: Dockerfile
+    image: kbase-backend:latest
+    container_name: kbase-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+
+  frontend:
+    build:
+      context: ./kbase-frontend
+      dockerfile: Dockerfile
+    image: kbase-frontend:latest
+    container_name: kbase-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+
+volumes:
+  postgres_data:

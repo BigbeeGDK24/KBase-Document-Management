@@ -6,17 +6,23 @@ import com.kbase.demo.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-
 import java.util.List;
 
 
-
 @Repository
-public interface DocumentRepository 
+public interface DocumentRepository
         extends JpaRepository<Document, Long> {
 
 
+    // lấy document theo project
     List<Document> findByProject_Id(Long projectId);
+
+
+    // search document theo tên file
+    List<Document> findByProject_IdAndFileNameContainingIgnoreCase(
+            Long projectId,
+            String keyword
+    );
 
 
 }
